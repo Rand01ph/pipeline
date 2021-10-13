@@ -350,6 +350,7 @@ func (c *Reconciler) reconcile(ctx context.Context, pr *v1beta1.PipelineRun, get
 			pr.Namespace, pr.Name, err)
 		return controller.NewPermanentError(err)
 	}
+	logger.Infof("No.1 pipelineMeta is: %+v, pipelineSpec is: %+v", pipelineMeta, pipelineSpec)
 
 	// Store the fetched PipelineSpec on the PipelineRun for auditing
 	if err := storePipelineSpec(ctx, pr, pipelineSpec); err != nil {
@@ -489,6 +490,7 @@ func (c *Reconciler) reconcile(ctx context.Context, pr *v1beta1.PipelineRun, get
 	if err != nil {
 		return err
 	}
+	logger.Infof("No.2 resolvePipelineState is: %+v", &pipelineRunState)
 
 	// Build PipelineRunFacts with a list of resolved pipeline tasks,
 	// dag tasks graph and final tasks graph
