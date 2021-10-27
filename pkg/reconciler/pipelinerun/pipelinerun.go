@@ -350,7 +350,6 @@ func (c *Reconciler) reconcile(ctx context.Context, pr *v1beta1.PipelineRun, get
 			pr.Namespace, pr.Name, err)
 		return controller.NewPermanentError(err)
 	}
-	logger.Infof("No.1 pipelineMeta is: %+v, pipelineSpec is: %+v", pipelineMeta, pipelineSpec)
 
 	// Store the fetched PipelineSpec on the PipelineRun for auditing
 	if err := storePipelineSpec(ctx, pr, pipelineSpec); err != nil {
@@ -490,7 +489,6 @@ func (c *Reconciler) reconcile(ctx context.Context, pr *v1beta1.PipelineRun, get
 	if err != nil {
 		return err
 	}
-	logger.Infof("No.2 resolvePipelineState is: %+v", &pipelineRunState)
 
 	// Build PipelineRunFacts with a list of resolved pipeline tasks,
 	// dag tasks graph and final tasks graph
@@ -1153,12 +1151,18 @@ func (c *Reconciler) updatePipelineRunStatusFromInformer(ctx context.Context, pr
 	// Pipeline and PipelineRun.  The user could change them during the lifetime of the PipelineRun so the
 	// current labels may not be set on the previously created TaskRuns.
 	pipelineRunLabels := getTaskrunLabels(pr, "", false)
-	taskRuns, err := c.taskRunLister.TaskRuns(pr.Namespace).List(labels.SelectorFromSet(pipelineRunLabels))
+	//taskRuns, err := c.taskRunLister.TaskRuns(pr.Namespace).List(labels.SelectorFromSet(pipelineRunLabels))
+	taskRuns, err := c.PipelineClientSet.TektonV1beta1().TaskRuns(pr.Namespace).List(ctx, metav1.ListOptions{LabelSelector: labels.Set(pipelineRunLabels).String()})
+	var ret []*v1beta1.TaskRun
+	for _, t := range taskRuns.Items {
+		tr := t
+		ret = append(ret, &tr)
+	}
 	if err != nil {
 		logger.Errorf("could not list TaskRuns %#v", err)
 		return err
 	}
-	updatePipelineRunStatusFromTaskRuns(logger, pr, taskRuns)
+	updatePipelineRunStatusFromTaskRuns(logger, pr, ret)
 
 	runs, err := c.runLister.Runs(pr.Namespace).List(labels.SelectorFromSet(pipelineRunLabels))
 	if err != nil {
